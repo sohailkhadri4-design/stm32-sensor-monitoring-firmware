@@ -1,4 +1,4 @@
-# STM32 / STM32CubeIDE
+# STM32 build output
 Debug/
 Release/
 build/
@@ -12,15 +12,12 @@ build/
 *.su
 *.lst
 
-# IDE metadata
+# IDE temporary metadata
 .settings/
-.project
-.cproject
-.mxproject
-
-# Generated / temporary files
 *.tmp
 *.log
 *.swp
+
+# OS files
 .DS_Store
 Thumbs.db
