@@ -1,4 +1,5 @@
 #include "bme280.h"
+#include "app_config.h"
 
 #define BME280_REG_ID        0xD0U
 #define BME280_REG_RESET     0xE0U
