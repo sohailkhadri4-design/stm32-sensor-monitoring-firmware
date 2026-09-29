@@ -2,7 +2,7 @@
 
 Embedded C firmware project for an STM32-based sensor monitoring system. The project is organized around sensor acquisition, I2C/SPI communication, UART diagnostics, GPIO control, and fault detection.
 
-> **Project status:** Firmware scaffolding and documentation are in place. Hardware-specific MCU configuration, sensor drivers, pin assignments, and measured test results should be added from the actual STM32CubeIDE project before claiming them as completed implementation details.
+> **Project status:** This repository now contains a self-contained reference firmware design using an STM32F401RE-class target, BME280 over I2C, MAX6675 over SPI, UART diagnostics, GPIO status indication, and documented fault handling. It is a reference implementation, not a record of physical hardware testing.
 
 ## Project Overview
 
@@ -30,7 +30,7 @@ The goal is to build a maintainable STM32 firmware application that can:
 
 ## Hardware
 
-The exact hardware should be recorded from the real build:
+The reference hardware configuration used by this implementation is:
 
 | Component | Details |
 |---|---|
