@@ -1,237 +1,282 @@
 # STM32 Sensor Monitoring & Communication Firmware
 
-Embedded C firmware project for an STM32-based sensor monitoring system. The project is organized around sensor acquisition, I2C/SPI communication, UART diagnostics, GPIO control, and fault detection.
+[![Language](https://img.shields.io/badge/Language-Embedded%20C-blue.svg)](https://en.wikipedia.org/wiki/C_(programming_language)) [![MCU](https://img.shields.io/badge/MCU-STM32F401RE-03234B.svg)](https://www.st.com/en/microcontrollers-microprocessors/stm32f4-series.html) [![I2C](https://img.shields.io/badge/Interface-I2C-orange.svg)](https://www.st.com/) [![SPI](https://img.shields.io/badge/Interface-SPI-orange.svg)](https://www.st.com/) [![UART](https://img.shields.io/badge/Interface-UART-orange.svg)](https://www.st.com/) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **Project status:** This repository now contains a self-contained reference firmware design using an STM32F401RE-class target, BME280 over I2C, MAX6675 over SPI, UART diagnostics, GPIO status indication, and documented fault handling. It is a reference implementation, not a record of physical hardware testing.
+> **Reference implementation:** A structured STM32 Embedded C project demonstrating sensor acquisition, I2C/SPI communication, UART diagnostics, GPIO control, and fault handling.
 
 ## Project Overview
 
-The goal is to build a maintainable STM32 firmware application that can:
+This project demonstrates how an STM32 firmware application can monitor multiple sensors through different communication interfaces and report system status through UART.
 
-- Acquire sensor data through I2C and SPI.
-- Validate sensor readings before using them.
-- Report measurements and faults through UART.
-- Control GPIO-based status or actuator outputs.
-- Detect communication and sensor faults.
-- Keep application logic separated from hardware-specific drivers.
+The reference design uses:
+- **STM32F401RE** as the MCU
+- **BME280** over I2C
+- **MAX6675** over SPI
+- **USART2** for diagnostics
+- **GPIO** for status/fault indication
+- A dedicated fault-detection layer
 
-## Features
+The code is organized to separate application logic, communication drivers, diagnostics, and fault handling.
 
-- Embedded C application structure
-- STM32-oriented HAL integration points
-- I2C sensor communication interface
-- SPI sensor communication interface
+## Reference Implementation Notice
+
+This repository was created as a **reference firmware implementation** because the original STM32CubeIDE project and physical test hardware were not available.
+
+Therefore:
+- The MCU and peripheral configuration are explicitly documented.
+- Sensor drivers are implemented against their documented communication interfaces.
+- The `.ioc` file describes the intended STM32CubeMX configuration.
+- UART values shown in documentation are illustrative.
+- Test cases are documented as **Planned**, not falsely reported as completed hardware tests.
+
+This distinction keeps the project technically honest while still demonstrating embedded firmware design and implementation skills.
+
+## Key Features
+- Embedded C firmware architecture
+- STM32 HAL-based peripheral integration
+- BME280 I2C driver
+- MAX6675 SPI driver
 - UART diagnostic logging
-- GPIO control integration point
+- GPIO status indication
+- Communication fault detection
 - Sensor-data validation
-- Fault detection and reporting
-- Test-case documentation
-- System architecture documentation
+- Fault recovery flow
+- STM32CubeMX `.ioc` configuration
+- Hardware/pin documentation
+- Structured firmware verification plan
 
-## Hardware
+## Hardware Configuration
 
-The reference hardware configuration used by this implementation is:
+| Component | Reference device | Interface | STM32 connection |
+|---|---|---|---|
+| MCU | STM32F401RE | ARM Cortex-M4 | Main controller |
+| Environmental sensor | BME280 | I2C | PB8 / PB9 |
+| Thermocouple interface | MAX6675 | SPI | PA5 / PA6 / PA7 |
+| MAX6675 chip select | GPIO | Digital output | PB6 |
+| Debug/diagnostic | USART2 | UART | PA2 / PA3 |
+| Status output | GPIO | Digital output | PC13 |
 
-| Component | Details |
+### Communication settings
+| Peripheral | Configuration |
 |---|---|
-| Microcontroller | STM32 MCU - **TODO: specify exact part/board** |
-| I2C sensor | **TODO: specify sensor** |
-| SPI sensor | **TODO: specify sensor** |
-| UART interface | **TODO: specify peripheral and settings** |
-| GPIO | **TODO: specify pins / connected device** |
-| Power | **TODO: specify supply arrangement** |
+| I2C1 | 100 kHz, 7-bit addressing |
+| SPI1 | Master, 8-bit, software NSS, Mode 0 |
+| USART2 | 115200 baud, 8-N-1 |
+| Status GPIO | PC13 |
+| MAX6675 CS | PB6 |
 
-## Software & Tools
-
-- Embedded C
-- STM32CubeIDE
-- STM32 HAL
-- Git and GitHub
-- UART serial terminal
-- Optional: logic analyzer / oscilloscope for communication debugging
+> Always verify the exact board pinout, breakout-board voltage requirements, pull-ups, and alternate-function mapping before connecting physical hardware.
 
 ## System Architecture
 
-```text
-                         +----------------------+
-                         |      STM32 MCU       |
-                         |   Application Layer  |
-                         +----------+-----------+
-                                    |
-              +---------------------+---------------------+
-              |                     |                     |
-           Sensor                Fault                 GPIO
-         Management            Detection              Control
-              |                     |                     |
-       +------+------+              |              Actuators /
-       |             |              |               Status LED
-      I2C           SPI             |
-       |             |              |
-    Sensors       Sensors           |
-       +-------------+--------------+
-                     |
-                   UART
-                     |
-              PC / Serial Monitor
-```
+![System Architecture](Images/fault_detection.svg)
 
-See [system architecture](Docs/system_architecture.md) for the detailed design.
+~~~text
+                         STM32F401RE
+                              |
+              +---------------+---------------+
+              |               |               |
+             I2C             SPI             GPIO
+              |               |               |
+           BME280          MAX6675        Status LED
+              |               |               |
+              +-------+-------+               |
+                      |                       |
+                 Sensor Data                  |
+                      |                       |
+                      v                       |
+                Fault Detection <-------------+
+                      |
+                      v
+                 UART Logging
+                      |
+                      v
+                Serial Terminal
+~~~
 
 ## Firmware Flow
 
-```text
-Initialize peripherals
-        |
-        v
-Initialize sensors
-        |
-        v
-Read sensor data
-        |
-        v
-Validate communication and measurement
-        |
-    +---+---+
-    |       |
-   OK     Fault
-    |       |
-    v       v
-Report    Fault
-value     handling
-    |       |
-    +---+---+
-        |
-        v
-Continue monitoring
-```
+![UART / Firmware Output](Images/uart_terminal.svg)
 
-## I2C Communication
+~~~text
++------------------+
+| HAL / MCU Init   |
++--------+---------+
+         |
+         v
++------------------+
+| Peripheral Init  |
+| I2C / SPI / UART |
+| GPIO             |
++--------+---------+
+         |
+         v
++------------------+
+| Sensor Init      |
+| BME280           |
++--------+---------+
+         |
+         v
++------------------+
+| Read Sensors     |
+| I2C + SPI        |
++--------+---------+
+         |
+         v
++------------------+
+| Validate Data    |
++--------+---------+
+         |
+      +--+--+
+      |     |
+    Valid  Fault
+      |     |
+      v     v
+   Report  Fault
+    Data   Handler
+      |     |
+      +--+--+
+         |
+         v
+   Wait / Repeat
+~~~
 
-The I2C integration point is designed for sensor transactions such as:
+## I2C Sensor Driver
 
-1. Select the target device address.
-2. Transmit the required register or command.
-3. Receive sensor data.
-4. Check the STM32 HAL transaction result.
-5. Validate the received measurement.
-6. Pass valid data to the application or report a fault.
+The BME280 driver demonstrates device identification, sensor configuration, register-based acquisition, HAL transaction checking, and communication-failure propagation.
 
-The actual I2C peripheral instance, address, timing, and sensor register map must be documented from the target hardware.
+Source: `Core/Src/bme280.c`
 
-## SPI Communication
+## SPI Sensor Driver
 
-The SPI integration follows the same separation between application logic and hardware access:
+The MAX6675 driver demonstrates software chip-select control, SPI frame acquisition, open-thermocouple detection, temperature conversion, and SPI failure reporting.
 
-1. Configure the SPI peripheral.
-2. Assert the target chip-select GPIO.
-3. Transfer the required command/data.
-4. Deassert chip select.
-5. Check the transaction result.
-6. Validate the received data.
+Source: `Core/Src/max6675.c`
 
-The exact SPI mode, clock rate, chip-select pin, and sensor protocol are hardware-specific and should be filled in from the actual implementation.
+## UART Diagnostics
 
-## UART Logging
-
-UART is used as a diagnostic interface for measurements and fault messages.
+USART2 is configured for **115200 baud, 8 data bits, no parity, 1 stop bit**.
 
 Example format:
 
-```text
-Sensor: 123
-Sensor: 124
-Fault: I2C_COMMUNICATION
-Sensor: 126
-```
+~~~text
+STM32 Sensor Monitor
+Reference: STM32F401RE + BME280 + MAX6675
+BME280: OK
 
-The example above is illustrative only. Replace it with an actual serial-terminal capture after hardware testing.
+BME280 raw temperature: <value>
+BME280 raw pressure: <value>
+BME280 raw humidity: <value>
+MAX6675 temperature x10 C: <value>
+STATUS: OK
+~~~
 
-## GPIO Control
+Fault example:
 
-GPIO can be used for:
+~~~text
+FAULT: I2C_COMMUNICATION
+~~~
 
-- Status indication
-- Sensor reset lines
-- Chip-select signals for SPI devices
-- Actuator control
-- Fault indication
-
-Actual pin assignments should be documented after importing the real STM32CubeIDE configuration.
+The numeric values are placeholders for an actual hardware capture and should not be interpreted as measured results.
 
 ## Fault Detection
 
-The project includes a fault-detection interface for conditions such as:
+| Fault | Meaning |
+|---|---|
+| `I2C_COMMUNICATION` | I2C transaction failed |
+| `SPI_COMMUNICATION` | SPI transaction failed |
+| `SENSOR_DISCONNECTED` | Sensor/device is unavailable |
+| `INVALID_READING` | Received data failed validation |
+| `NONE` | No detected fault |
 
-- Sensor disconnected
-- I2C communication failure
-- SPI communication failure
-- Invalid sensor reading
-
-The current scaffold separates fault classification from the hardware transaction. The final implementation should map each fault to the actual peripheral return status and hardware behavior.
+When a fault is detected, the firmware identifies the fault, reports it through UART, drives the configured status output, and continues the monitoring loop where possible.
 
 ## Project Structure
 
-```text
+~~~text
 stm32-sensor-monitoring-firmware/
 |
 +-- Core/
 |   +-- Inc/
-|   |   +-- main.h
-|   |   +-- sensor.h
-|   |   +-- uart.h
+|   |   +-- app_config.h
+|   |   +-- bme280.h
 |   |   +-- fault_detection.h
+|   |   +-- main.h
+|   |   +-- max6675.h
+|   |   +-- uart.h
 |   |
 |   +-- Src/
-|       +-- main.c
-|       +-- sensor.c
-|       +-- uart.c
+|       +-- bme280.c
 |       +-- fault_detection.c
+|       +-- main.c
+|       +-- max6675.c
+|       +-- stm32f4xx_hal_msp.c
+|       +-- uart.c
 |
 +-- Drivers/
 |   +-- I2C/
 |   +-- SPI/
 |
 +-- Docs/
+|   +-- hardware_setup.md
 |   +-- system_architecture.md
 |   +-- testing.md
 |
 +-- Images/
+|   +-- fault_detection.svg
+|   +-- uart_terminal.svg
 |
++-- STM32_Sensor_Monitoring.ioc
 +-- .gitignore
 +-- LICENSE
 +-- README.md
-```
+~~~
 
-## Testing
+## Verification & Testing
 
-The planned verification matrix covers:
+The repository includes a structured test plan covering normal startup, BME280 I2C communication, I2C failure, MAX6675 SPI communication, SPI failure, open thermocouple detection, invalid sensor data, UART diagnostics, GPIO fault indication, and sensor recovery.
 
-| Test | Purpose |
-|---|---|
-| Normal sensor communication | Confirm valid data acquisition |
-| Sensor disconnected | Verify fault detection |
-| I2C device not responding | Verify timeout/NACK handling |
-| SPI communication failure | Verify SPI fault handling |
-| Invalid sensor reading | Verify data validation |
-| UART communication | Verify diagnostic output |
-| GPIO output | Verify configured output behavior |
+See **[Docs/testing.md](Docs/testing.md)** for the complete verification matrix and expected outputs.
 
-Detailed procedures and result fields are available in [Docs/testing.md](Docs/testing.md).
+### Current test status
 
-## Development Notes
+**Planned / not physically verified**
 
-This repository deliberately avoids inventing MCU-specific details. The next implementation step is to integrate the actual STM32CubeIDE project so that generated startup code, peripheral initialization, HAL handles, sensor drivers, clock configuration, and real pin mappings match the hardware.
+No physical test results are claimed in this repository.
+
+## STM32CubeIDE Setup
+
+1. Open `STM32_Sensor_Monitoring.ioc` with STM32CubeIDE/STM32CubeMX.
+2. Select the installed STM32Cube firmware package for STM32F4.
+3. Regenerate standard startup/HAL project files if required by the installed CubeIDE version.
+4. Add the files under `Core/` to the generated project.
+5. Verify wiring against `Docs/hardware_setup.md`.
+6. Build the project.
+7. Flash the STM32 target.
+8. Open a serial terminal at **115200 8-N-1**.
+9. Execute the verification cases in `Docs/testing.md`.
+
+> CubeIDE-generated startup and linker files can vary by firmware-package version and board configuration. Regenerating them from the `.ioc` is preferred over committing generated files from an unknown local environment.
+
+## Skills Demonstrated
+
+**Embedded:** Embedded C, STM32, ARM Cortex-M, STM32 HAL
+
+**Interfaces:** I2C, SPI, UART, GPIO
+
+**Firmware:** Driver development, sensor acquisition, fault handling, validation, diagnostics
+
+**Tools:** STM32CubeIDE, STM32CubeMX, Git, GitHub
 
 ## Future Improvements
-
-- Integrate the target STM32CubeIDE project.
-- Add real I2C and SPI sensor drivers.
-- Add configurable sensor thresholds.
-- Add structured fault codes.
-- Add watchdog handling.
-- Add automated host-side tests where practical.
-- Add UART log captures and hardware test photographs.
-- Add CI checks for source formatting and static analysis.
+- Add full BME280 calibration compensation.
+- Add configurable measurement thresholds.
+- Add watchdog supervision.
+- Add non-blocking communication using interrupts/DMA.
+- Add unit tests for application-level fault logic.
+- Add static analysis and formatting checks.
+- Add real hardware test captures after physical validation.
+- Add logic-analyzer traces for I2C and SPI transactions.
 
 ## Author
 
@@ -244,4 +289,4 @@ Embedded Firmware | STM32 | ARM Cortex-M | Embedded C
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE).
+MIT License. See [LICENSE](LICENSE).
