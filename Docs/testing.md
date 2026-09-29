@@ -1,43 +1,46 @@
-# Firmware Testing
+# Firmware Verification Plan
 
-This document defines the planned and implemented verification cases for the sensor-monitoring firmware.
+This repository documents a reference verification plan. The tests are not claimed as physically completed because no original hardware project or laboratory results were supplied.
 
 ## Test matrix
 
-| ID | Test | Setup | Expected behavior | Result |
-|---|---|---|---|---|
-| T01 | Normal sensor communication | Sensor connected and responding | Valid data is acquired and reported | TODO |
-| T02 | Sensor disconnected | Disconnect target sensor | Communication error is detected and reported | TODO |
-| T03 | I2C device not responding | Use an unavailable I2C address / disconnected device | Timeout or NACK is handled without uncontrolled behavior | TODO |
-| T04 | SPI communication failure | Interrupt or remove SPI device connection | SPI transaction failure is detected | TODO |
-| T05 | Invalid sensor reading | Provide an out-of-range or invalid value | Reading is rejected or flagged | TODO |
-| T06 | UART verification | Connect serial monitor | Diagnostic messages are readable and correctly formatted | TODO |
-| T07 | GPIO verification | Observe configured GPIO output | Output changes according to firmware state | TODO |
+| ID | Condition | Expected firmware behavior | Evidence |
+|---|---|---|---|
+| T01 | Normal startup | Startup banner and peripheral initialization | UART capture |
+| T02 | BME280 at 0x76 | Chip ID accepted, sensor initialized | UART |
+| T03 | BME280 disconnected | I2C transaction fails and fault is reported | UART + GPIO |
+| T04 | MAX6675 connected | SPI frame received and temperature reported | UART |
+| T05 | SPI interrupted | SPI communication fault reported | UART + GPIO |
+| T06 | Open thermocouple | Sensor fault detected from MAX6675 status bit | UART + GPIO |
+| T07 | Invalid sample | Measurement rejected | UART |
+| T08 | UART at 115200 8-N-1 | Readable continuous diagnostics | Terminal screenshot |
+| T09 | Fault output | PC13 changes state during fault | LED/multimeter |
+| T10 | Sensor recovery | Normal STATUS: OK resumes | UART |
 
-## Fault-handling expectations
+## Expected outputs
 
-The firmware should:
+Normal:
+    STM32 Sensor Monitor
+    BME280: OK
+    BME280 raw temperature: <value>
+    BME280 raw pressure: <value>
+    BME280 raw humidity: <value>
+    MAX6675 temperature x10 C: <value>
+    STATUS: OK
 
-- Detect communication timeouts or failed transactions.
-- Avoid treating invalid data as a valid measurement.
-- Report useful fault information through UART.
-- Continue operating safely where the hardware and application design permit.
-- Keep fault states distinguishable from normal sensor data.
+I2C fault:
+    FAULT: I2C_COMMUNICATION
 
-## UART verification
+SPI fault:
+    FAULT: SPI_COMMUNICATION
 
-Record the actual configuration from STM32CubeIDE after hardware integration:
+Invalid data:
+    FAULT: INVALID_READING
 
-- Baud rate: TODO
-- Data bits: TODO
-- Stop bits: TODO
-- Parity: TODO
-- Flow control: TODO
+## Pass criteria
 
-## Evidence
+A test is Pass only after the expected behavior is observed on the target hardware and evidence is recorded. Suggested evidence includes UART capture, logic-analyzer traces, wiring photographs, and STM32CubeIDE debug observations.
 
-Add screenshots, serial-terminal captures, logic-analyzer traces, or photographs of the test setup under `Images/` when available.
+## Status
 
-## Important
-
-The repository currently contains documentation and firmware scaffolding. Test results marked `TODO` must be replaced with measured results from the real hardware before presenting them as completed tests.
+All tests are currently Planned. This keeps the repository technically honest and prevents simulated results from being presented as physical validation.
