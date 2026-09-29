@@ -1,0 +1,26 @@
+# STM32 / STM32CubeIDE
+Debug/
+Release/
+build/
+*.elf
+*.hex
+*.bin
+*.map
+*.list
+*.o
+*.d
+*.su
+*.lst
+
+# IDE metadata
+.settings/
+.project
+.cproject
+.mxproject
+
+# Generated / temporary files
+*.tmp
+*.log
+*.swp
+.DS_Store
+Thumbs.db
